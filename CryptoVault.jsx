@@ -747,6 +747,264 @@ body { cursor: crosshair; }
   75%      { transform: translate(-1px, 2px); }
 }
 :root.danger .cv-content { animation: dangerShake 0.18s 4; }
+
+/* =============================================================
+ * MOBILE RESPONSIVE DESIGN
+ * ============================================================ */
+
+/* Tablets (max-width: 768px) */
+@media (max-width: 768px) {
+  .cv-root {
+    padding: 16px 24px 48px;
+    max-width: 100%;
+  }
+  
+  .cv-title {
+    font-size: 52px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .cv-mode-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .cv-mode-btn {
+    padding: 20px;
+    font-size: 20px;
+    letter-spacing: 4px;
+  }
+  
+  .cv-exec {
+    padding: 20px;
+    font-size: 20px;
+    letter-spacing: 4px;
+  }
+  
+  .cv-step-title {
+    font-size: 18px;
+  }
+  
+  .cv-statusbar {
+    flex-direction: column;
+    gap: 10px;
+    font-size: 11px;
+  }
+  
+  .cv-matrix-grid {
+    max-width: 100%;
+  }
+  
+  .cv-wa-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .cv-dl-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  .cv-root {
+    padding: 12px 16px 32px;
+  }
+  
+  .cv-title {
+    font-size: 36px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  
+  .cv-tagline {
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-step {
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  
+  .cv-step-head {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  
+  .cv-step-sub {
+    margin-left: 0;
+  }
+  
+  .cv-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .cv-card {
+    padding: 12px 14px;
+  }
+  
+  .cv-card-name {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  .cv-card-desc {
+    font-size: 10px;
+    min-height: auto;
+  }
+  
+  .cv-mode-btn {
+    padding: 16px 12px;
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-exec {
+    padding: 16px 12px;
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-drop {
+    padding: 32px 16px;
+  }
+  
+  .cv-drop-h {
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-drop-s {
+    font-size: 10px;
+  }
+  
+  .cv-input {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .cv-textarea {
+    min-height: 120px;
+    font-size: 13px;
+    padding: 10px;
+  }
+  
+  .cv-btn {
+    padding: 10px 16px;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  
+  .cv-fileinfo {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .cv-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 12px;
+  }
+  
+  .cv-fname {
+    font-size: 14px;
+  }
+  
+  .cv-fmeta {
+    font-size: 11px;
+  }
+  
+  .cv-step-title {
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-step-num {
+    min-width: 32px;
+    padding: 3px 8px;
+    font-size: 14px;
+  }
+  
+  .cv-statusbar {
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 10px;
+    flex-direction: column;
+  }
+  
+  .cv-matrix-grid {
+    max-width: 100%;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .cv-matrix-grid input {
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  .cv-wa-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .cv-wa-btn {
+    padding: 12px 16px;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  
+  .cv-dl-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .cv-dl {
+    padding: 16px 12px;
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+  
+  .cv-term {
+    font-size: 11px;
+    max-height: 200px;
+  }
+  
+  .cv-footer {
+    margin-top: 32px;
+    padding-top: 12px;
+  }
+  
+  .cv-foot-line {
+    font-size: 12px;
+  }
+  
+  .cv-output {
+    padding: 14px;
+  }
+  
+  .cv-output-h {
+    font-size: 14px;
+  }
+  
+  .cv-preview {
+    max-height: 120px;
+    font-size: 11px;
+  }
+  
+  /* Reduce scanlines opacity on mobile for better readability */
+  .cv-scanlines {
+    opacity: 0.3;
+  }
+}
 `;
 
 /* ============== CONSTANTS ============== */
