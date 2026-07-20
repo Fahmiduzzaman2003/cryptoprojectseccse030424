@@ -30,6 +30,15 @@ const C = {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
 
+/* Respect user motion preferences for performance */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* === Theme tokens — flipped to red when <html> has .danger === */
 :root {
   --accent: #00ff41;
@@ -44,24 +53,61 @@ const CSS = `
   --bg: #000;
 }
 :root.danger {
-  --accent: #ff0019;
-  --accent-dim: #8a000d;
-  --accent-rgb: 255, 0, 25;
-  --secondary: #ff8a1f;
-  --secondary-rgb: 255, 138, 31;
-  --warn: #ffc800;
+  /* Brighter, more legible red — was #ff0019 which crushed to pure crimson */
+  --accent: #ff2a3d;
+  --accent-dim: #b40014;
+  --accent-rgb: 255, 42, 61;
+  /* Orange-amber "secondary" so cyan-on-red stays a contrast pair */
+  --secondary: #ffb000;
+  --secondary-rgb: 255, 176, 0;
+  --warn: #ffe066;
+  --warn-rgb: 255, 224, 102;
   --err: #ffffff;
-  --panel-tint: 60, 0, 6;
-  --bg: #060000;
+  /* Warmer panel base + a hint of glow so cards separate from pure black */
+  --panel-tint: 72, 4, 10;
+  --bg: #0a0002;
+  /* Used by the danger-only keyframes */
+  --blood: #ff0019;
+  --blood-rgb: 255, 0, 25;
+  --blood-deep: #6b0008;
+  --smoke: 255, 80, 90;
 }
 :root.danger body {
   background:
-    radial-gradient(ellipse at top,    rgba(180, 0, 30, 0.30), transparent 55%),
-    radial-gradient(ellipse at bottom, rgba(120, 0, 20, 0.40), transparent 60%),
-    #060000;
+    radial-gradient(ellipse at top,    rgba(180, 0, 30, 0.35), transparent 55%),
+    radial-gradient(ellipse at bottom, rgba(120, 0, 20, 0.45), transparent 60%),
+    #0a0002;
+}
+
+/* Smooth theme transition when toggling encrypt/decrypt. */
+html, body, .cv-step, .cv-card, .cv-btn, .cv-input, .cv-textarea,
+.cv-mode-btn, .cv-exec, .cv-dl, .cv-statusbar, .cv-output, .cv-wa-btn,
+.cv-step-num, .cv-srctab, .cv-tagline {
+  transition: background-color 0.35s ease, border-color 0.35s ease,
+              color 0.35s ease, box-shadow 0.35s ease, text-shadow 0.35s ease;
 }
 
 * { box-sizing: border-box; }
+
+/* Smooth in-page nav and predictable button focus rings (a11y). */
+html { scroll-behavior: smooth; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+/* Floating scroll-to-top pill — only visible on mobile after scroll. */
+.cv-scrolltop {
+  position: fixed; right: 16px; bottom: max(20px, env(safe-area-inset-bottom, 16px));
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #000; border: 0; cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  z-index: 50; box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.55);
+  transition: transform .15s ease, opacity .2s ease;
+}
+.cv-scrolltop:hover { transform: translateY(-2px); }
+.cv-scrolltop.visible { display: inline-flex; }
+@media (min-width: 900px) { .cv-scrolltop { display: none !important; } }
 
 html, body, #root {
   margin: 0; padding: 0; background: var(--bg); color: var(--accent);
@@ -78,6 +124,9 @@ body { cursor: crosshair; }
 ::-webkit-scrollbar-thumb { background: var(--accent-dim); border-radius: 0; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
+:root.danger ::-webkit-scrollbar-thumb { background: var(--accent-dim); box-shadow: inset 0 0 6px rgba(255,42,61,0.5); }
+:root.danger ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
 .cv-root {
   position: relative; min-height: 100vh; padding: 24px 48px 64px;
   max-width: 1320px; margin: 0 auto;
@@ -85,6 +134,7 @@ body { cursor: crosshair; }
 
 .cv-canvas {
   position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.55;
+  will-change: transform;
 }
 
 /* Aggressive CRT scanlines + flicker overlay across the whole screen. */
@@ -131,20 +181,26 @@ body { cursor: crosshair; }
   text-transform: uppercase;
 }
 .cv-tagline {
-  color: var(--secondary); font-size: 13px; margin: 0 0 8px;
-  letter-spacing: 4px; text-transform: uppercase;
+  color: var(--secondary); font-size: clamp(11px, 2.2vw, 14px); margin: 0 0 8px;
+  letter-spacing: clamp(1px, 0.7vw, 4px); text-transform: uppercase;
+  line-height: 1.4;
+  font-weight: 600;
+  text-shadow: 0 0 6px rgba(var(--secondary-rgb), 0.4);
 }
 
 .cv-tagline-stack {
   position: relative;
-  min-height: 18px;
-  margin-bottom: 8px;
+  min-height: calc(1.4em * 2 + 4px);
+  margin-bottom: 10px;
   overflow: hidden;
 }
 .cv-tagline-alt {
   position: absolute;
   inset: 0;
   animation: taglineSwap 4.8s ease-in-out infinite;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 .cv-tagline-alt.alt {
   animation-delay: 2.4s;
@@ -185,6 +241,30 @@ body { cursor: crosshair; }
 }
 @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+/* Danger-tuned title — more diffuse, less eye-strain than pure red */
+:root.danger .cv-title {
+  text-shadow:
+    0 0 8px var(--accent),
+    0 0 22px var(--accent),
+    0 0 48px rgba(var(--accent-rgb), 0.7),
+    0 0 4px rgba(255, 255, 255, 0.35);
+}
+:root.danger .cv-statusbar {
+  background:
+    linear-gradient(90deg, rgba(var(--accent-rgb), 0.18), rgba(var(--panel-tint), 0.7) 60%);
+  border-color: rgba(var(--accent-rgb), 0.65);
+  box-shadow: inset 0 0 22px rgba(var(--accent-rgb), 0.15);
+}
+:root.danger .cv-stat-val {
+  text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.9);
+}
+:root.danger .cv-stat-dot {
+  box-shadow:
+    0 0 10px var(--accent), 0 0 22px var(--accent),
+    0 0 4px #fff;
+  animation-duration: 0.9s;
+}
+
 @keyframes streamScroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -218,6 +298,20 @@ body { cursor: crosshair; }
 .cv-step::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
 .cv-step::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
 
+/* Danger step panels — slightly brighter, stronger glow, deeper panel base */
+:root.danger .cv-step {
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(var(--panel-tint), 0.92));
+  border-color: rgba(var(--accent-rgb), 0.55);
+  box-shadow:
+    0 0 28px rgba(var(--accent-rgb), 0.30),
+    inset 0 0 28px rgba(var(--accent-rgb), 0.10);
+}
+:root.danger .cv-step::before, :root.danger .cv-step::after {
+  border-color: #fff;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
 .cv-step-head {
   display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
   border-bottom: 1px dashed rgba(var(--accent-rgb), 0.45); padding-bottom: 12px;
@@ -232,8 +326,18 @@ body { cursor: crosshair; }
 .cv-step-title {
   font-size: 22px; color: var(--accent); letter-spacing: 4px;
   text-transform: uppercase; font-weight: 700;
+  text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6);
 }
 .cv-step-sub { color: var(--secondary); font-size: 12px; opacity: 0.85; margin-left: auto; letter-spacing: 1px; }
+
+:root.danger .cv-step-num {
+  color: #fff;
+  text-shadow: 0 0 4px rgba(0,0,0,0.6);
+  box-shadow: 0 0 16px var(--accent), inset 0 0 6px rgba(255,255,255,0.25);
+}
+:root.danger .cv-step-title {
+  text-shadow: 0 0 14px rgba(var(--accent-rgb), 0.85);
+}
 
 /* ----- Drop zone ----- */
 @keyframes spinDash { to { background-position: 32px 0, -32px 0, 0 32px, 0 -32px; } }
@@ -249,6 +353,16 @@ body { cursor: crosshair; }
   background-size: 18px 2px, 18px 2px, 2px 18px, 2px 18px;
   background-position: 0 0, 0 100%, 0 0, 100% 0;
   background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+}
+
+/* In danger: thicker red march-borders + hotter inner glow */
+:root.danger .cv-drop {
+  background-color: rgba(var(--accent-rgb), 0.08);
+  box-shadow: inset 0 0 36px rgba(var(--accent-rgb), 0.18);
+}
+:root.danger .cv-drop:hover {
+  background-color: rgba(var(--accent-rgb), 0.20);
+  box-shadow: 0 0 36px var(--accent), inset 0 0 36px rgba(var(--accent-rgb), 0.32);
 }
 .cv-drop:hover {
   background-color: rgba(var(--accent-rgb), 0.15);
@@ -325,6 +439,15 @@ body { cursor: crosshair; }
     0 0 32px var(--secondary),
     inset 0 0 18px rgba(var(--secondary-rgb), 0.25);
   background: rgba(var(--secondary-rgb), 0.12);
+}
+
+/* Danger: red-tinted selected card with white border for accessibility */
+:root.danger .cv-card.selected {
+  border-color: #fff;
+  box-shadow:
+    0 0 36px var(--accent),
+    inset 0 0 22px rgba(var(--accent-rgb), 0.30);
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.20), rgba(var(--accent-rgb), 0.06));
 }
 .cv-card.locked {
   opacity: 0.32; pointer-events: none; border-color: rgba(80,80,80,0.5);
@@ -489,7 +612,56 @@ body { cursor: crosshair; }
   color: var(--accent-dim); border-color: var(--accent-dim);
   text-shadow: none;
 }
+
+/* Danger-tuned execute button — softer alarm, still readable */
+:root.danger .cv-exec {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.05));
+  border-width: 2px;
+  animation-duration: 1.4s;
+  text-shadow: 0 0 10px var(--accent), 0 0 22px rgba(var(--accent-rgb), 0.7);
+}
+:root.danger .cv-exec:hover {
+  background: var(--accent);
+  color: #fff;
+  text-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
 .cv-hint { margin-top: 10px; text-align: center; color: var(--secondary); font-size: 13px; letter-spacing: 2px; }
+
+/* Inline keyboard-shortcut chip */
+.cv-kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  margin: 0 4px;
+  font-size: 11px;
+  border: 1px solid rgba(var(--accent-rgb), 0.6);
+  border-radius: 3px;
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+  letter-spacing: 1px;
+  font-family: inherit;
+}
+
+/* Sticky indeterminate progress bar during encryption */
+@keyframes progressSlide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+.cv-progress {
+  position: relative;
+  height: 3px;
+  margin-top: 10px;
+  background: rgba(var(--accent-rgb), 0.12);
+  overflow: hidden;
+}
+.cv-progress::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%; width: 25%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: progressSlide 1.2s linear infinite;
+  box-shadow: 0 0 12px var(--accent);
+}
 
 /* ----- Terminal log ----- */
 .cv-term {
@@ -506,6 +678,14 @@ body { cursor: crosshair; }
 .cv-l-err { color: rgb(255,0, 0, 0.66); font-weight: 700; }
 .cv-l-step { color: var(--accent); opacity: 0.85; }
 
+:root.danger .cv-term {
+  background: linear-gradient(180deg, #0a0002, #000);
+  border-color: rgba(var(--accent-rgb), 0.55);
+  box-shadow: inset 0 0 28px rgba(var(--accent-rgb), 0.10);
+}
+:root.danger .cv-l-err { color: #fff; text-shadow: 0 0 8px var(--accent); }
+:root.danger .cv-l-warn { color: var(--warn); }
+
 /* ----- Output ----- */
 .cv-output {
   margin-top: 18px; background: rgba(var(--secondary-rgb), 0.08);
@@ -516,6 +696,21 @@ body { cursor: crosshair; }
 }
 .cv-output-h { color: var(--secondary); font-size: 16px; margin-bottom: 8px; letter-spacing: 3px; font-weight: 700; }
 .cv-output-meta { color: var(--accent); font-size: 12px; margin-bottom: 10px; }
+
+/* Danger output — red accent instead of cyan, but secondary header stays amber */
+:root.danger .cv-output {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.12), rgba(var(--secondary-rgb), 0.06));
+  border-color: var(--accent);
+  box-shadow: 0 0 32px rgba(var(--accent-rgb), 0.4), inset 0 0 22px rgba(var(--accent-rgb), 0.12);
+}
+:root.danger .cv-output-h {
+  color: var(--secondary);
+  text-shadow: 0 0 10px rgba(var(--secondary-rgb), 0.6);
+}
+:root.danger .cv-output-meta {
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
+}
 .cv-preview {
   background: #000; border: 1px solid rgba(var(--accent-rgb), 0.45); padding: 10px;
   max-height: 160px; overflow: auto; color: var(--accent); font-size: 12px;
@@ -648,14 +843,21 @@ body { cursor: crosshair; }
   z-index: 2; pointer-events: none; opacity: 0;
   transition: opacity 0.6s ease;
   background:
-    radial-gradient(ellipse at 12% -10%, rgba(255, 0, 25, 0.55), transparent 30%),
-    radial-gradient(ellipse at 88% -10%, rgba(255, 0, 25, 0.55), transparent 30%),
-    radial-gradient(ellipse at 50% -8%,  rgba(180, 0, 18, 0.45), transparent 36%);
+    /* Top edge — a crimson haze hugging the very top of the viewport */
+    linear-gradient(180deg,
+      rgba(var(--blood-rgb), 0.55) 0%,
+      rgba(var(--blood-rgb), 0.22) 8%,
+      rgba(var(--blood-rgb), 0.08) 22%,
+      transparent 38%),
+    /* Three soft crimson pools near the corners + center */
+    radial-gradient(ellipse 38% 28% at 12% -6%,  rgba(var(--blood-rgb), 0.65), transparent 70%),
+    radial-gradient(ellipse 38% 28% at 88% -6%,  rgba(var(--blood-rgb), 0.65), transparent 70%),
+    radial-gradient(ellipse 28% 22% at 50% -4%,  rgba(180, 0, 18, 0.55), transparent 70%);
   mix-blend-mode: screen;
 }
 :root.danger .cv-blood { opacity: 1; }
 :root.danger .cv-vignette {
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(70, 0, 0, 0.95) 100%);
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(70, 0, 0, 0.96) 100%);
 }
 :root.danger .cv-scanlines { opacity: 0.32; }
 
@@ -666,14 +868,37 @@ body { cursor: crosshair; }
   60%  { transform: translateY(60vh) scaleY(1); opacity: 0.85; }
   100% { transform: translateY(120vh) scaleY(1.4); opacity: 0; }
 }
+@keyframes dripGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px var(--blood)) drop-shadow(0 0 18px rgba(var(--blood-rgb), 0.55)); }
+  50%      { filter: drop-shadow(0 0 14px var(--blood)) drop-shadow(0 0 30px rgba(var(--blood-rgb), 0.8)); }
+}
 .cv-drip {
   position: fixed; top: 0; width: 3px; height: 80px; z-index: 2;
-  background: linear-gradient(to bottom, transparent, #ff0019 30%, #8a000d);
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    var(--blood) 35%,
+    var(--blood-deep) 100%);
   border-radius: 0 0 50% 50%;
-  box-shadow: 0 0 12px #ff0019, 0 0 24px rgba(255, 0, 25, 0.6);
+  box-shadow:
+    0 0 14px var(--blood),
+    0 0 28px rgba(var(--blood-rgb), 0.7);
   pointer-events: none; opacity: 0;
+  animation: dripGlow 2.4s ease-in-out infinite;
 }
-:root.danger .cv-drip { opacity: 1; animation: drip 5s linear infinite; }
+:root.danger .cv-drip { opacity: 1; animation: drip 5s linear infinite, dripGlow 2.4s ease-in-out infinite; }
+
+/* Alternating fat drips for extra visual rhythm on wider viewports */
+.cv-drip.thick {
+  width: 5px; height: 110px;
+  background: linear-gradient(to bottom,
+    transparent 0%, var(--blood) 30%, var(--blood-deep) 100%);
+}
+
+@media (max-width: 768px) {
+  /* Kill the drip keyframes on mobile but keep a soft static glow if visible */
+  .cv-drip { animation: none !important; opacity: 0.6; }
+  .cv-blood { opacity: 0.7; }
+}
 
 /* =============================================================
  * SVG ICONOGRAPHY
@@ -752,258 +977,335 @@ body { cursor: crosshair; }
  * MOBILE RESPONSIVE DESIGN
  * ============================================================ */
 
+/* Defaults — applied to all interactive controls. Kills the
+ * 300ms tap delay on mobile browsers and prevents double-zoom. */
+button, .cv-btn, .cv-card, .cv-mode-btn, .cv-exec, .cv-dl, .cv-wa-btn,
+.cv-srctab, .cv-clear-btn, input, textarea, select {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Respect safe areas on notched / home-indicator phones. */
+:root { --cv-safe-t: env(safe-area-inset-top, 0px); --cv-safe-b: env(safe-area-inset-bottom, 0px); }
+.cv-root { padding-left: max(48px, env(safe-area-inset-left, 0px)); padding-right: max(48px, env(safe-area-inset-right, 0px)); }
+
 /* Tablets (max-width: 768px) */
 @media (max-width: 768px) {
   .cv-root {
-    padding: 16px 24px 48px;
+    padding: 16px 20px max(48px, env(safe-area-inset-bottom, 24px));
     max-width: 100%;
   }
-  
+
   .cv-title {
     font-size: 52px;
     letter-spacing: 2px;
   }
-  
+
   .cv-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .cv-mode-row {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  
+
   .cv-mode-btn {
     padding: 20px;
     font-size: 20px;
     letter-spacing: 4px;
   }
-  
+
   .cv-exec {
     padding: 20px;
     font-size: 20px;
     letter-spacing: 4px;
   }
-  
+
   .cv-step-title {
     font-size: 18px;
   }
-  
+
   .cv-statusbar {
-    flex-direction: column;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px 14px;
     font-size: 11px;
   }
-  
+
+  .cv-statusbar > span { white-space: nowrap; }
+
   .cv-matrix-grid {
     max-width: 100%;
   }
-  
+
   .cv-wa-row {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-  
+
   .cv-dl-row {
     grid-template-columns: 1fr;
     gap: 10px;
   }
+
+  /* Canvas + scanlines eat ~20-30% of mobile GPU budget — soften them */
+  .cv-canvas { opacity: 0.35; }
+  .cv-scanlines { opacity: 0.25; }
+}
+
+/* Small phones (max-width: 640px) */
+@media (max-width: 640px) {
+  .cv-title { font-size: 44px; letter-spacing: 1.5px; }
+  .cv-tagline-stack { min-height: calc(1.4em * 3); }
+  /* Stop the heavy blur tag swap on tiny screens; show both stacked */
+  .cv-tagline-alt { animation: none !important; opacity: 1; position: static; white-space: normal; }
+  .cv-tagline-alt.alt { display: none; }
+  .cv-grid { grid-template-columns: repeat(2, 1fr); }
+  .cv-card { min-height: 0; }
 }
 
 /* Mobile (max-width: 480px) */
 @media (max-width: 480px) {
   .cv-root {
-    padding: 12px 16px 32px;
+    padding: 12px 14px max(32px, env(safe-area-inset-bottom, 16px));
   }
-  
+
   .cv-title {
-    font-size: 36px;
+    font-size: clamp(28px, 9vw, 40px);
     letter-spacing: 1px;
     line-height: 1;
   }
-  
-  .cv-tagline {
-    font-size: 10px;
-    letter-spacing: 2px;
+
+  /* Tagline: stack vertically, plenty of room, full opacity. */
+  .cv-tagline-stack { min-height: auto; margin-bottom: 6px; overflow: visible; }
+  .cv-tagline-alt {
+    position: static;
+    display: block;
+    margin-top: 2px;
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    white-space: normal;
+    line-height: 1.45;
   }
-  
+  .cv-tagline { color: var(--secondary); }
+
   .cv-step {
-    padding: 16px 18px;
-    margin-bottom: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    /* Tame the clip-path so the notched corners don't overflow tiny viewports */
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
   }
-  
+
   .cv-step-head {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
-    align-items: flex-start;
+    align-items: center;
   }
-  
+
   .cv-step-sub {
     margin-left: 0;
+    flex-basis: 100%;
+    font-size: 10px;
   }
-  
+
   .cv-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  
+
   .cv-card {
     padding: 12px 14px;
+    min-height: 64px;
   }
-  
+
   .cv-card-name {
     font-size: 14px;
     margin-bottom: 4px;
   }
-  
+
   .cv-card-desc {
     font-size: 10px;
     min-height: auto;
   }
-  
+
   .cv-mode-btn {
     padding: 16px 12px;
     font-size: 16px;
     letter-spacing: 2px;
+    min-height: 56px;
   }
-  
+
   .cv-exec {
-    padding: 16px 12px;
+    padding: 18px 12px;
     font-size: 16px;
     letter-spacing: 2px;
+    min-height: 64px;
   }
-  
+
   .cv-drop {
     padding: 32px 16px;
   }
-  
+
   .cv-drop-h {
     font-size: 20px;
     letter-spacing: 2px;
   }
-  
+
   .cv-drop-s {
     font-size: 10px;
   }
-  
+
   .cv-input {
     font-size: 14px;
     padding: 10px 12px;
   }
-  
+
   .cv-textarea {
     min-height: 120px;
-    font-size: 13px;
+    font-size: 14px;
     padding: 10px;
   }
-  
+
   .cv-btn {
     padding: 10px 16px;
     font-size: 12px;
     letter-spacing: 1px;
+    min-height: 44px;
   }
-  
+
   .cv-fileinfo {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 1fr;
     gap: 10px;
   }
-  
+
+  .cv-fileinfo .cv-clear-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
+
   .cv-icon {
     width: 40px;
     height: 40px;
     font-size: 12px;
   }
-  
+
   .cv-fname {
     font-size: 14px;
   }
-  
+
   .cv-fmeta {
     font-size: 11px;
   }
-  
+
   .cv-step-title {
     font-size: 16px;
     letter-spacing: 2px;
   }
-  
+
   .cv-step-num {
     min-width: 32px;
     padding: 3px 8px;
     font-size: 14px;
   }
-  
+
   .cv-statusbar {
     gap: 8px;
-    padding: 6px 10px;
+    padding: 8px 10px;
     font-size: 10px;
-    flex-direction: column;
+    flex-wrap: wrap;
   }
-  
+  .cv-statusbar > span { white-space: nowrap; }
+  .cv-statusbar > span:last-child { flex-basis: 100%; }
+
   .cv-matrix-grid {
     max-width: 100%;
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .cv-matrix-grid input {
     padding: 8px;
     font-size: 14px;
+    min-height: 44px;
   }
-  
+
   .cv-wa-row {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-  
+
   .cv-wa-btn {
     padding: 12px 16px;
     font-size: 12px;
     letter-spacing: 1px;
+    min-height: 48px;
   }
-  
+
   .cv-dl-row {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  
+
   .cv-dl {
     padding: 16px 12px;
     font-size: 16px;
     letter-spacing: 2px;
+    min-height: 56px;
   }
-  
+
   .cv-term {
     font-size: 11px;
     max-height: 200px;
   }
-  
+
   .cv-footer {
     margin-top: 32px;
     padding-top: 12px;
   }
-  
+
   .cv-foot-line {
     font-size: 12px;
   }
-  
+
   .cv-output {
     padding: 14px;
   }
-  
+
   .cv-output-h {
     font-size: 14px;
   }
-  
+
   .cv-preview {
     max-height: 120px;
     font-size: 11px;
   }
-  
-  /* Reduce scanlines opacity on mobile for better readability */
-  .cv-scanlines {
-    opacity: 0.3;
-  }
+
+  /* Stop every expensive paint on phones — drops ~40% GPU work */
+  .cv-scanlines { opacity: 0.12; animation: none; }
+  .cv-canvas { opacity: 0.22; }
+  .cv-drop,
+  .cv-card.compatible { animation: none; }
+  .cv-drop:hover { animation: none; }
+  .cv-hex-stream { display: none; }
+  .cv-stream { display: none; }
+}
+
+/* Microscopic phones (≤ 380px) — landscape foldables, iPhone SE 1st gen */
+@media (max-width: 380px) {
+  .cv-root { padding: 10px 12px max(28px, env(safe-area-inset-bottom, 12px)); }
+  .cv-title { font-size: 26px; }
+  .cv-step { padding: 12px 14px; }
+  .cv-statusbar { font-size: 9px; padding: 6px 8px; }
+  .cv-mode-btn { font-size: 14px; padding: 14px 10px; letter-spacing: 1.5px; }
+  .cv-exec { font-size: 14px; padding: 16px 10px; letter-spacing: 1.5px; }
+  .cv-hex { font-size: 10px; max-height: 100px; }
+  .cv-fname { font-size: 13px; }
+  .cv-icon { width: 36px; height: 36px; }
 }
 `;
 
@@ -1789,6 +2091,8 @@ function MatrixRain({ banglaActive, danger }) {
   const ref = useRef(null);
   const animRef = useRef(0);
   const dropsRef = useRef([]);
+  const lastTickRef = useRef(0);
+  const visibleRef = useRef(false);
   const banglaRef = useRef(banglaActive);
   const dangerRef = useRef(danger);
   banglaRef.current = banglaActive;
@@ -1798,37 +2102,69 @@ function MatrixRain({ banglaActive, danger }) {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let w = 0, h = 0, cols = 0;
+    let w = 0, h = 0, cols = 0, cellSize = 14;
+    // Detect low-power devices & small viewports to throttle the rain.
+    const isMobile = window.innerWidth < 768;
+    const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+    const targetFPS = (isMobile || isCoarse) ? 24 : 60;
+    const frameInterval = 1000 / targetFPS;
+
     const charset = '01ABCDEF0123456789!@#$%&*+=<>'.split('');
     const banglaSet = BANGLA;
 
     const resize = () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-      cols = Math.floor(w / 14);
-      dropsRef.current = Array(cols).fill(0).map(() => Math.random() * h / 14);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.25 : 1.75);
+      w = canvas.width = Math.floor(window.innerWidth * dpr);
+      h = canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Larger cells on phones = fewer columns = cheaper paint.
+      cellSize = isMobile ? 18 : 14;
+      cols = Math.ceil(window.innerWidth / cellSize);
+      dropsRef.current = Array(cols).fill(0).map(() => Math.random() * window.innerHeight / cellSize);
     };
     resize();
     window.addEventListener('resize', resize);
 
-    const draw = () => {
+    // Pause the canvas when it's offscreen (e.g. another tab).
+    const io = new IntersectionObserver(
+      ([entry]) => { visibleRef.current = entry.isIntersecting; },
+      { threshold: 0 }
+    );
+    io.observe(canvas);
+
+    const draw = (ts) => {
+      if (!visibleRef.current) {
+        animRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      const elapsed = ts - lastTickRef.current;
+      if (elapsed < frameInterval) {
+        animRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      lastTickRef.current = ts - (elapsed % frameInterval);
+      const W = window.innerWidth;
+      const H = window.innerHeight;
       ctx.fillStyle = dangerRef.current ? 'rgba(8, 0, 0, 0.10)' : 'rgba(0, 0, 0, 0.08)';
-      ctx.fillRect(0, 0, w, h);
-      ctx.font = '14px "Share Tech Mono", monospace';
+      ctx.fillRect(0, 0, W, H);
+      ctx.font = cellSize + 'px "Share Tech Mono", monospace';
       const drops = dropsRef.current;
       const baseColor = dangerRef.current ? '#ff003c' : '#00ff41';
       const headColor = dangerRef.current ? '#ffaaaa' : '#aaffaa';
-      for (let i = 0; i < drops.length; i++) {
+      // Skip every other column on mobile to halve fillText calls.
+      const stride = isMobile ? 2 : 1;
+      for (let i = 0; i < drops.length; i += stride) {
         const useBangla = banglaRef.current && Math.random() < 0.3;
         const set = useBangla ? banglaSet : charset;
         const ch = set[Math.floor(Math.random() * set.length)];
-        const x = i * 14;
-        const y = drops[i] * 14;
-        // bright "head" character occasionally for more aggressive look
+        const x = i * cellSize;
+        const y = drops[i] * cellSize;
         const isHead = Math.random() < 0.04;
         ctx.fillStyle = useBangla ? '#ffc800' : (isHead ? headColor : baseColor);
         ctx.fillText(ch, x, y);
-        if (y > h && Math.random() > 0.975) drops[i] = 0;
+        if (y > H && Math.random() > 0.975) drops[i] = 0;
         drops[i] += 1;
       }
       animRef.current = requestAnimationFrame(draw);
@@ -1838,10 +2174,11 @@ function MatrixRain({ banglaActive, danger }) {
     return () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', resize);
+      io.disconnect();
     };
   }, []);
 
-  return <canvas ref={ref} className="cv-canvas" />;
+  return <canvas ref={ref} className="cv-canvas" aria-hidden="true" />;
 }
 
 /* ============== UI: FILE DROP ============== */
@@ -1911,7 +2248,7 @@ function FileDropZone({ file, onFile, onClear, fileCategory, hexDump }) {
 
 /* ============== UI: ALGORITHM CARD ============== */
 
-function AlgorithmCard({ algo, state, selected, onSelect }) {
+const AlgorithmCard = React.memo(function AlgorithmCard({ algo, state, selected, onSelect }) {
   const cls = `cv-card ${state} ${selected ? 'selected' : ''}`;
   let badgeText, tooltip;
   if (state === 'compatible') { badgeText = 'COMPATIBLE'; tooltip = `[INFO] ${algo.fact}`; }
@@ -1924,10 +2261,20 @@ function AlgorithmCard({ algo, state, selected, onSelect }) {
     tooltip = `[WARN] File will be Base64-encoded before encryption. Output is a .txt file.`;
   } else { badgeText = 'LOCKED'; }
 
+  const clickable = state !== 'incompatible' && state !== 'locked';
   return (
     <div
       className={cls}
-      onClick={() => state !== 'incompatible' && state !== 'locked' && onSelect(algo.id)}
+      onClick={clickable ? () => onSelect(algo.id) : undefined}
+      role="button"
+      tabIndex={clickable ? 0 : -1}
+      aria-pressed={selected}
+      aria-disabled={!clickable}
+      onKeyDown={(e) => {
+        if (clickable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault(); onSelect(algo.id);
+        }
+      }}
     >
       <div className="cv-card-ico">
         <Icon name={ALGO_ICON[algo.id] || 'gears'} size={32}
@@ -1950,7 +2297,7 @@ function AlgorithmCard({ algo, state, selected, onSelect }) {
       )}
     </div>
   );
-}
+});
 
 /* ============== UI: KEY INPUT PANEL ============== */
 
@@ -2211,23 +2558,23 @@ function ModeToggle({ mode, setMode }) {
 
 /* ============== UI: TERMINAL LOG ============== */
 
-function TerminalLog({ lines }) {
+const TerminalLog = React.memo(function TerminalLog({ lines }) {
   const ref = useRef(null);
   useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [lines]);
   if (!lines.length) return null;
   return (
-    <div className="cv-term" ref={ref}>
+    <div className="cv-term" ref={ref} role="log" aria-live="polite" aria-label="Cipher execution log">
       {lines.map((l, i) => <div key={i} className={`cv-term-line cv-l-${l.kind}`}>{l.text}</div>)}
     </div>
   );
-}
+});
 
 /* ============== UI: OUTPUT PANEL ============== */
 
-function OutputPanel({ output, onDownload, onCopy, copied, onWhatsApp, waPhone, setWaPhone, showWA }) {
+const OutputPanel = React.memo(function OutputPanel({ output, onDownload, onCopy, copied, onWhatsApp, waPhone, setWaPhone, showWA }) {
   if (!output) return null;
   return (
-    <div className="cv-output">
+    <div className="cv-output" id="cv-output-anchor" role="region" aria-label="Cipher output">
       <div className="cv-output-h">
         <Icon name="vault-open" size={28} className="second" />
         &nbsp;{'>'} VAULT_OPEN — OUTPUT_READY
@@ -2272,7 +2619,7 @@ function OutputPanel({ output, onDownload, onCopy, copied, onWhatsApp, waPhone, 
       )}
     </div>
   );
-}
+});
 
 /* ============== APP ============== */
 
@@ -2291,6 +2638,7 @@ export default function App() {
   const [inputMode, setInputMode] = useState('file'); // 'file' | 'text'
   const [plainText, setPlainText] = useState('');
   const [waPhone, setWaPhone] = useState(''); // optional recipient phone
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Inject CSS
   useEffect(() => {
@@ -2319,11 +2667,22 @@ export default function App() {
       setFile(f);
       setFileCategory('text');
       setFileBuffer(buf);
+      // Hex dump + byte counter are derived; skip the cost when text is unchanged.
       setHexDump(getHexDump(buf, 64));
     } else {
       setFile(null); setFileCategory(null); setFileBuffer(null); setHexDump('');
     }
     setOutput(null);
+    // Debounce: wait 120ms after the user stops typing before recomputing the
+    // expensive hex dump. The file/buffer are set immediately so execution
+    // can proceed the moment the user clicks EXECUTE.
+    const t = setTimeout(() => {
+      if (inputMode === 'text' && plainText) {
+        const buf = new TextEncoder().encode(plainText).buffer;
+        setHexDump(getHexDump(buf, 64));
+      }
+    }, 120);
+    return () => clearTimeout(t);
   }, [inputMode, plainText]);
 
   // Switching source tabs clears stale state from the other source.
@@ -2668,6 +3027,25 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [execute]);
 
+  // Show the floating scroll-to-top pill once the user is past the hero.
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // When output lands, smooth-scroll the result panel into view (mobile-friendly).
+  useEffect(() => {
+    if (!output) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById('cv-output-anchor');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [output]);
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
   const onDownload = () => { if (output) downloadBlob(output.blob, output.filename); };
   const onCopy = () => {
     if (output && output.preview) {
@@ -2717,11 +3095,30 @@ export default function App() {
       <div className="cv-vignette" />
       <div className="cv-scanlines" />
       <div className="cv-blood" />
-      {/* Blood drips, only visible in danger mode */}
-      {[8, 22, 38, 54, 67, 81, 92].map((left, i) => (
-        <span key={i} className="cv-drip"
-          style={{ left: `${left}%`, animationDelay: `${i * 0.7}s`, animationDuration: `${4 + (i % 3)}s` }} />
+      {/* Blood drips, only visible in danger mode — alternate thin + thick for rhythm */}
+      {[5, 14, 26, 38, 50, 62, 74, 86, 95].map((left, i) => (
+        <span key={i}
+          className={'cv-drip' + (i % 3 === 0 ? ' thick' : '')}
+          style={{
+            left: `${left}%`,
+            animationDelay: `${i * 0.7}s`,
+            animationDuration: `${4 + (i % 3)}s`,
+          }} />
       ))}
+
+      {/* Floating scroll-to-top pill — only visible on mobile after scroll */}
+      <button
+        type="button"
+        className={'cv-scrolltop' + (showScrollTop ? ' visible' : '')}
+        onClick={scrollToTop}
+        aria-label="Scroll to top"
+        title="Scroll to top"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+             strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m6 14 6-6 6 6" />
+        </svg>
+      </button>
       <div className="cv-root">
         <div className="cv-content">
 
@@ -2747,7 +3144,8 @@ export default function App() {
                 <span className="cv-stat-key">ALGO:</span> <span className="cv-stat-val">{algo ? ALG_LABEL[algo].toUpperCase() : 'NULL'}</span>
               </span>
               <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6,
-                             color: danger ? '#ff0019' : 'var(--accent)' }}>
+                             color: danger ? 'var(--accent)' : 'var(--accent)',
+                             textShadow: danger ? '0 0 10px rgba(255,42,61,0.7)' : 'none' }}>
                 {danger && <Icon name="skull" size={16} />}
                 {danger ? '// !! BLOOD VAULT !!' : '// SECURE LINK'}
               </span>
@@ -2887,7 +3285,10 @@ export default function App() {
                 <span>{running ? '> RUNNING...' : (danger ? '> UNLOCK_VAULT_' : '> SEAL_VAULT_')}</span>
               </span>
             </button>
-            <div className="cv-hint">{hint}</div>
+            {running && <div className="cv-progress" role="progressbar" aria-label="Encrypting…" />}
+            <div className="cv-hint">
+              {hint} {canExecute && <span className="cv-kbd">Ctrl</span> + <span className="cv-kbd">Enter</span>}
+            </div>
 
             <TerminalLog lines={logs} />
             <OutputPanel
